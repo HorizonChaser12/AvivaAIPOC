@@ -481,7 +481,7 @@ def main():
         return
     
     # Get file path from user or use default
-    default_path = "hehe.xlsx"  # Changed to match the file name in the logs
+    default_path = "Defects.xlsx"  # Changed to match the file name in the logs
     
     logger.info(f"Enter the path to your Excel file (or press Enter for '{default_path}')")
     file_path = input("> ").strip()
@@ -529,7 +529,7 @@ rag_system = None
 def initialize_rag_system():
     global rag_system
     try:
-        file_path = "hehe.xlsx"  # Default file path
+        file_path = "Defects.xlsx"  # Default file path
         rag_system = AdaptiveRAGSystem(file_path)
         logger.info("RAG system initialized successfully.")
     except Exception as e:
