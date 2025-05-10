@@ -3,117 +3,750 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Query Interface</title>
+    <title>Defect Knowledge Explorer</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        :root {
+            --dark-bg: #1a1a1a;
+            --darker-bg: #0f0f0f;
+            --light-text: #f5f5f5;
+            --accent-color: #f87171;
+            --button-bg: #2a2a2a;
+            --button-hover: #3a3a3a;
+            --border-color: #333;
+        }
+        
+        * {
             margin: 0;
             padding: 0;
-            display: flex;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--light-text);
             height: 100vh;
-        }
-
-        .container {
             display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar {
+            background-color: var(--darker-bg);
+            width: 48px;
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .sidebar-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 20px;
+            color: var(--light-text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        
+        .sidebar-icon.active {
+            background-color: var(--accent-color);
+        }
+        
+        .new-chat {
+            width: 36px;
+            height: 36px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .main-content {
+            margin-left: 48px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
             flex: 1;
         }
-
-        .left-pane {
-            width: 40%;
-            padding: 20px;
-            background-color: #f4f4f4;
-            border-right: 1px solid #ccc;
-            box-sizing: border-box;
+        
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px 0;
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
         }
-
-        .right-pane {
-            flex: 1;
+        
+        .welcome-text {
+            font-size: 28px;
+            font-weight: 400;
+            margin-top: 50px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .welcome-text svg {
+            margin-right: 12px;
+            color: var(--accent-color);
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
             padding: 20px;
-            box-sizing: border-box;
+            flex: 1;
+        }
+        
+        .message-container {
+            max-width: 800px;
+            margin: 12px auto;
+            width: 100%;
+        }
+        
+        .message {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+        }
+        
+        .user-message {
+            background-color: var(--button-bg);
+        }
+        
+        .assistant-message {
+            background-color: var(--button-hover);
+        }
+        
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto 24px;
+            width: 100%;
+            position: relative;
+        }
+        
+        .input-box {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: var(--button-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--light-text);
+            resize: none;
+            min-height: 56px;
+            max-height: 200px;
+            font-size: 16px;
+            line-height: 1.5;
             overflow-y: auto;
         }
-
-        textarea {
-            width: 100%;
-            height: 200px;
-            margin-bottom: 10px;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            resize: none;
+        
+        .input-box:focus {
+            outline: none;
+            border-color: var(--accent-color);
         }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            color: #fff;
-            background-color: #007bff;
+        
+        .input-actions {
+            display: flex;
+            margin-top: 12px;
+            justify-content: space-between;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-button {
+            padding: 8px 16px;
+            background-color: var(--button-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--light-text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .action-button:hover {
+            background-color: var(--button-hover);
+        }
+        
+        .action-button svg {
+            margin-right: 6px;
+        }
+        
+        .send-btn {
+            background-color: var(--accent-color);
             border: none;
-            border-radius: 4px;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
         }
-
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
+        
+        .result-container {
+            display: flex;
+            padding: 12px;
+            margin-top: 12px;
+            border-top: 1px solid var(--border-color);
         }
-
-        .output {
-            white-space: pre-wrap;
-            font-family: monospace;
+        
+        .result-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .result-tab {
+            padding: 6px 12px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .result-tab.active {
+            border-bottom-color: var(--accent-color);
+        }
+        
+        .result-content {
+            padding: 12px;
+            background-color: var(--button-bg);
+            border-radius: 8px;
+            margin-top: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--accent-color);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Status indicator styles */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 8px;
+        }
+        
+        .status-indicator.success {
+            color: #10b981;
+        }
+        
+        .status-indicator.error {
+            color: #ef4444;
+        }
+        
+        /* Scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--darker-bg);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--button-bg);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--button-hover);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="left-pane">
-            <h2>Enter Your Query</h2>
-            <textarea id="queryInput" placeholder="Type your query here..."></textarea>
-            <button id="submitButton" onclick="submitQuery()">Submit</button>
+    <div class="sidebar">
+        <div class="new-chat">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M5 12H19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
         </div>
-        <div class="right-pane">
-            <h2>Output</h2>
-            <div id="output" class="output">No output yet...</div>
+        <div class="sidebar-icon active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 21V5C4 4.46957 4.21071 3.96086 4.58579 3.58579C4.96086 3.21071 5.46957 3 6 3H18C18.5304 3 19.0391 3.21071 19.4142 3.58579C19.7893 3.96086 20 4.46957 20 5V18.97C20 20.1 19.18 21 18 21H4ZM7 9H17M7 13H17M7 17H12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="sidebar-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M18 20C18 17.7909 15.3137 16 12 16C8.68629 16 6 17.7909 6 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="header">
+            <div class="plan-info">
+                
+            </div>
+            <h1 class="welcome-text">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 16C15.866 16 19 12.866 19 9C19 5.13401 15.866 2 12 2C8.13401 2 5 5.13401 5 9C5 12.866 8.13401 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#f87171"/>
+                    <path d="M12 16V22M12 22L9 19M12 22L15 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Back at it, Defect Explorer
+            </h1>
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <!-- Chat messages will be added here dynamically -->
+        </div>
+        
+        <div class="input-container">
+            <textarea class="input-box" id="userInput" placeholder="How can I help you today?" rows="1"></textarea>
+            <div class="input-actions">
+                <div class="button-group">
+                    <button class="action-button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 12H17M3 5H21M3 19H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Write
+                    </button>
+                    <button class="action-button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 6.042V12.042L15 15.042M3 12.042C3 16.461 6.582 20.042 11 20.042C15.418 20.042 19 16.461 19 12.042C19 7.624 15.418 4.042 11 4.042C6.582 4.042 3 7.624 3 12.042Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Learn
+                    </button>
+                    <button class="action-button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 18L22 12L16 6M8 6L2 12L8 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Code
+                    </button>
+                    <button class="action-button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 6H5H21M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Life stuff
+                    </button>
+                </div>
+                <button class="send-btn" id="sendBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        async function submitQuery() {
-            const queryInput = document.getElementById('queryInput');
-            const outputDiv = document.getElementById('output');
-            const submitButton = document.getElementById('submitButton');
-
-            const query = queryInput.value.trim();
-            if (!query) {
-                alert('Please enter a query.');
-                return;
+        // DOM elements
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        // Auto-resize textarea
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+        
+        // Send message on Enter key (but allow Shift+Enter for new lines)
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
             }
-
-            submitButton.disabled = true;
-            outputDiv.textContent = 'Processing...';
-
-            try {
-                const response = await fetch('http://localhost:8000/query', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ query, k: 3 })
+        });
+        
+        // Send message on button click
+        sendBtn.addEventListener('click', sendMessage);
+        
+        // New chat button
+        document.querySelector('.new-chat').addEventListener('click', function() {
+            chatContainer.innerHTML = '';
+        });
+        
+        // Function to send message
+        function sendMessage() {
+            const query = userInput.value.trim();
+            if (!query) return;
+            
+            // Add user message to chat
+            addMessage(query, 'user');
+            
+            // Clear input
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            
+            // Show loading indicator
+            const loadingId = showLoading();
+            
+            // Call API
+            fetchResponse(query)
+                .then(response => {
+                    // Remove loading indicator
+                    hideLoading(loadingId);
+                    
+                    // Add assistant response
+                    addMessage(response.response, 'assistant');
+                    
+                    // Add result container with tabs if there are retrieved docs
+                    if (response.retrieved_docs && response.retrieved_docs.length > 0) {
+                        addResultContainer(response);
+                    }
+                })
+                .catch(error => {
+                    // Remove loading indicator
+                    hideLoading(loadingId);
+                    
+                    // Show error message
+                    addErrorMessage('An error occurred while processing your request. Please try again.');
+                    console.error('Error:', error);
                 });
-
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                outputDiv.textContent = JSON.stringify(data, null, 2);
-            } catch (error) {
-                outputDiv.textContent = `Error: ${error.message}`;
-            } finally {
-                submitButton.disabled = false;
+        }
+        
+        // Function to add a message to the chat
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-container';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = `message ${sender}-message`;
+            messageContent.textContent = text;
+            
+            messageDiv.appendChild(messageContent);
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Function to add error message
+        function addErrorMessage(text) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'message-container';
+            
+            const errorContent = document.createElement('div');
+            errorContent.className = 'message assistant-message';
+            
+            const statusIndicator = document.createElement('div');
+            statusIndicator.className = 'status-indicator error';
+            statusIndicator.textContent = 'Error: ' + text;
+            
+            errorContent.appendChild(statusIndicator);
+            errorDiv.appendChild(errorContent);
+            chatContainer.appendChild(errorDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Function to show loading indicator
+        function showLoading() {
+            const loadingId = 'loading-' + Date.now();
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message-container';
+            loadingDiv.id = loadingId;
+            
+            const loadingContent = document.createElement('div');
+            loadingContent.className = 'loading';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            
+            loadingContent.appendChild(spinner);
+            loadingDiv.appendChild(loadingContent);
+            chatContainer.appendChild(loadingDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            return loadingId;
+        }
+        
+        // Function to hide loading indicator
+        function hideLoading(loadingId) {
+            const loadingElement = document.getElementById(loadingId);
+            if (loadingElement) {
+                loadingElement.remove();
             }
         }
+        
+        // Function to add result container with tabs
+        function addResultContainer(response) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'message-container';
+            
+            const resultContent = document.createElement('div');
+            resultContent.className = 'message assistant-message';
+            
+            // Create tabs
+            const resultTabs = document.createElement('div');
+            resultTabs.className = 'result-tabs';
+            
+            const responseTab = document.createElement('div');
+            responseTab.className = 'result-tab active';
+            responseTab.textContent = 'Response';
+            responseTab.dataset.tab = 'response';
+            
+            const docsTab = document.createElement('div');
+            docsTab.className = 'result-tab';
+            docsTab.textContent = 'Retrieved Documents';
+            docsTab.dataset.tab = 'docs';
+            
+            const analysisTab = document.createElement('div');
+            analysisTab.className = 'result-tab';
+            analysisTab.textContent = 'Pattern Analysis';
+            analysisTab.dataset.tab = 'analysis';
+            
+            resultTabs.appendChild(responseTab);
+            resultTabs.appendChild(docsTab);
+            resultTabs.appendChild(analysisTab);
+            
+            // Create tab content
+            const responseContent = document.createElement('div');
+            responseContent.className = 'result-content';
+            responseContent.id = 'response-content';
+            
+            const docsContent = document.createElement('div');
+            docsContent.className = 'result-content hidden';
+            docsContent.id = 'docs-content';
+            
+            const analysisContent = document.createElement('div');
+            analysisContent.className = 'result-content hidden';
+            analysisContent.id = 'analysis-content';
+            
+            // Fill content
+            docsContent.innerHTML = formatRetrievedDocs(response.retrieved_docs);
+            analysisContent.innerHTML = formatPatternAnalysis(response.pattern_analysis);
+            
+            // Add tab switch event listeners
+            resultTabs.addEventListener('click', function(e) {
+                if (e.target.classList.contains('result-tab')) {
+                    // Remove active class from all tabs
+                    document.querySelectorAll('.result-tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked tab
+                    e.target.classList.add('active');
+                    
+                    // Hide all content
+                    document.querySelectorAll('.result-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Show active content
+                    const tabName = e.target.dataset.tab;
+                    document.getElementById(`${tabName}-content`).classList.remove('hidden');
+                }
+            });
+            
+            // Append everything
+            resultContent.appendChild(resultTabs);
+            resultContent.appendChild(responseContent);
+            resultContent.appendChild(docsContent);
+            resultContent.appendChild(analysisContent);
+            
+            resultDiv.appendChild(resultContent);
+            chatContainer.appendChild(resultDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Function to format retrieved documents
+        function formatRetrievedDocs(docs) {
+            if (!docs || docs.length === 0) {
+                return '<p>No documents retrieved.</p>';
+            }
+            
+            let html = '<h3>Retrieved Documents:</h3>';
+            
+            docs.forEach((doc, index) => {
+                html += `<div style="margin-top: 12px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">`;
+                html += `<h4>Document ${index + 1} (Similarity: ${doc.similarity.toFixed(4)})</h4>`;
+                
+                // Format content
+                for (const [key, value] of Object.entries(doc.content)) {
+                    if (key !== 'combined_text' && value !== '') {
+                        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        html += `<p><strong>${formattedKey}:</strong> ${value}</p>`;
+                    }
+                }
+                
+                html += `</div>`;
+            });
+            
+            return html;
+        }
+        
+        // Function to format pattern analysis
+        function formatPatternAnalysis(analysis) {
+            if (!analysis || analysis.count === 0) {
+                return '<p>No pattern analysis available.</p>';
+            }
+            
+            let html = `<h3>Pattern Analysis:</h3>`;
+            html += `<p><strong>Documents Analyzed:</strong> ${analysis.count}</p>`;
+            
+            // Date range
+            if (analysis.date_range) {
+                const dateRange = analysis.date_range;
+                html += `<h4>Date Range:</h4>`;
+                html += `<p><strong>Column:</strong> ${dateRange.column}</p>`;
+                html += `<p><strong>From:</strong> ${dateRange.min_date} <strong>To:</strong> ${dateRange.max_date}</p>`;
+                html += `<p><strong>Span:</strong> ${dateRange.span_days} days</p>`;
+            }
+            
+            // Patterns
+            if (analysis.patterns && Object.keys(analysis.patterns).length > 0) {
+                html += `<h4>Common Patterns:</h4>`;
+                
+                for (const [column, values] of Object.entries(analysis.patterns)) {
+                    const formattedColumn = column.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    html += `<p><strong>${formattedColumn}:</strong></p>`;
+                    html += `<ul>`;
+                    
+                    for (const [value, count] of Object.entries(values)) {
+                        html += `<li>${value}: ${count} occurrences</li>`;
+                    }
+                    
+                    html += `</ul>`;
+                }
+            }
+            
+            return html;
+        }
+        
+        // Function to call the API
+        async function fetchResponse(query) {
+            // For demo purposes, simulate API response
+            // In production, replace this with actual fetch call to your API
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // Simulated response
+                    resolve({
+                        response: "Based on the historical defect data, I've identified that your issue appears to be related to a known problem with the database connection timeout. This type of issue has occurred multiple times in January 2024, affecting the user authentication module.\n\nThe root cause was identified as connection pool exhaustion during peak usage hours. The most effective solution was implementing a connection pooling strategy with proper timeout settings and increasing the maximum connections based on load testing results.\n\nTo prevent this issue in the future, regular monitoring of connection pool usage has been recommended, along with implementing circuit breaker patterns to gracefully handle database unavailability scenarios. I hope this helps resolve your current issue!",
+                        retrieved_docs: [
+                            {
+                                content: {
+                                    id: "DEF-2024-01-15",
+                                    title: "Database Connection Timeout Error",
+                                    module: "User Authentication",
+                                    severity: "High",
+                                    reported_date: "2024-01-15",
+                                    resolved_date: "2024-01-17",
+                                    status: "Resolved",
+                                    description: "Users unable to log in due to database connection timeout errors during peak hours."
+                                },
+                                distance: 0.15,
+                                similarity: 0.95
+                            },
+                            {
+                                content: {
+                                    id: "DEF-2024-01-22",
+                                    title: "Connection Pool Exhaustion",
+                                    module: "Database Layer",
+                                    severity: "Critical",
+                                    reported_date: "2024-01-22",
+                                    resolved_date: "2024-01-23",
+                                    status: "Resolved",
+                                    description: "System slowdown due to database connection pool exhaustion under high load conditions."
+                                },
+                                distance: 0.25,
+                                similarity: 0.85
+                            }
+                        ],
+                        pattern_analysis: {
+                            count: 2,
+                            patterns: {
+                                module: {
+                                    "User Authentication": 1,
+                                    "Database Layer": 1
+                                },
+                                severity: {
+                                    "High": 1,
+                                    "Critical": 1
+                                },
+                                status: {
+                                    "Resolved": 2
+                                }
+                            },
+                            date_range: {
+                                column: "reported_date",
+                                min_date: "2024-01-15",
+                                max_date: "2024-01-22",
+                                span_days: 7
+                            }
+                        }
+                    });
+                }, 1500);
+            });
+        }
+        
+        // For a real implementation, use code like this:
+        /*
+        async function fetchResponse(query) {
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        k: 3
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error:', error);
+                throw error;
+            }
+        }
+        */
     </script>
 </body>
 </html>
