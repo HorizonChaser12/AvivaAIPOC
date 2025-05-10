@@ -1,0 +1,1221 @@
+2025-05-10 18:47:37,135 - __main__ - INFO - Starting FastAPI server using Uvicorn...
+2025-05-10 18:53:13,240 - __main__ - INFO - Starting FastAPI server using Uvicorn...
+2025-05-10 18:53:15,204 - Project - INFO - FastAPI application startup: Initializing RAG system...
+2025-05-10 18:53:15,204 - Project - INFO - Initializing models. Embedding: models/embedding-001, LLM: gemini-pro
+2025-05-10 18:53:15,218 - Project - INFO - Google AI Models initialized successfully.
+2025-05-10 18:53:15,218 - Project - INFO - Loading data from Defects.xlsx...
+2025-05-10 18:53:15,377 - Project - INFO - Using sheet 'Defects' with 94 rows and 10 columns
+2025-05-10 18:53:15,378 - Project - INFO - Analyzing data columns...
+2025-05-10 18:53:15,418 - Project - INFO - Column analysis complete: {'Defect ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Defect Description': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.9680851063829787, 'unique_values_count': 91, 'semantic_type': 'description'}, 'Test Case ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Component': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.7978723404255319, 'unique_values_count': 75, 'semantic_type': 'general_text'}, 'Prict': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Urgent', 'Medium', 'Low', 'High']}, 'Sev': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Low', 'Medium', 'Critical', 'High']}, 'Defect Log Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.6702127659574468, 'unique_values_count': 63, 'semantic_type': 'date'}, 'Defect Resolution Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.8617021276595744, 'unique_values_count': 81, 'semantic_type': 'date'}, 'Containment Phase': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.07446808510638298, 'unique_values_count': 7, 'semantic_type': 'category', 'categories': ['Integration Testing', 'Production', 'Unit Testing', 'UAT', 'System Testing', 'Non-production', 'Staging']}, 'Root Cause': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.2127659574468085, 'unique_values_count': 20, 'semantic_type': 'general_text'}}
+2025-05-10 18:53:15,421 - Project - INFO - Data preparation complete. 'combined_text' field created.
+2025-05-10 18:53:15,423 - Project - INFO - Loaded 94 records from Excel file.
+2025-05-10 18:53:15,423 - Project - INFO - Attempting to load FAISS index from faiss_index.bin...
+2025-05-10 18:53:15,424 - Project - INFO - Successfully loaded FAISS index from faiss_index.bin. N_vectors: 94, Dimension: 768
+2025-05-10 18:53:15,424 - Project - INFO - LLMChain initialized.
+2025-05-10 18:53:15,425 - Project - INFO - RAG system initialized successfully.
+2025-05-10 18:53:28,975 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 18:53:28,975 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 18:53:28,975 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 18:53:30,901 - Project - INFO - Retrieved 3 documents.
+2025-05-10 18:53:30,902 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 18:53:30,902 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 18:53:32,741 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised NotFound: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods..
+2025-05-10 18:53:35,111 - Project - ERROR - Error during LLM chain invocation: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 194, in _chat_with_retry
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.NotFound: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-05-10 18:53:35,438 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 18:54:05,319 - Project - INFO - Received API query: 'Mobile app issues', k=5
+2025-05-10 18:54:05,319 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=5
+2025-05-10 18:54:05,319 - Project - INFO - Retrieving top 5 documents for query: Mobile app issues...
+2025-05-10 18:54:05,850 - Project - INFO - Retrieved 5 documents.
+2025-05-10 18:54:05,850 - Project - INFO - Pattern analysis complete: {'count': 5, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 2, 'Low': 1}, 'Sev': {'Critical': 1, 'Low': 3, 'Medium': 1}, 'Containment Phase': {'Production': 4, 'System Testing': 1}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2, 'Incorrect logic': 1, 'Performance issue': 1}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-01-10', 'max_date': '2025-04-29', 'span_days': 109}}
+2025-05-10 18:54:05,850 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 18:54:06,220 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised NotFound: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods..
+2025-05-10 18:54:08,585 - Project - ERROR - Error during LLM chain invocation: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 194, in _chat_with_retry
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.NotFound: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-05-10 18:54:08,590 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 18:56:13,640 - Project - INFO - FastAPI application startup: Initializing RAG system...
+2025-05-10 18:56:13,641 - Project - INFO - Initializing models. Embedding: models/embedding-001, LLM: gemini-flash-2.0
+2025-05-10 18:56:13,654 - Project - INFO - Google AI Models initialized successfully.
+2025-05-10 18:56:13,655 - Project - INFO - Loading data from Defects.xlsx...
+2025-05-10 18:56:13,799 - Project - INFO - Using sheet 'Defects' with 94 rows and 10 columns
+2025-05-10 18:56:13,800 - Project - INFO - Analyzing data columns...
+2025-05-10 18:56:13,826 - Project - INFO - Column analysis complete: {'Defect ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Defect Description': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.9680851063829787, 'unique_values_count': 91, 'semantic_type': 'description'}, 'Test Case ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Component': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.7978723404255319, 'unique_values_count': 75, 'semantic_type': 'general_text'}, 'Prict': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Urgent', 'Medium', 'Low', 'High']}, 'Sev': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Low', 'Medium', 'Critical', 'High']}, 'Defect Log Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.6702127659574468, 'unique_values_count': 63, 'semantic_type': 'date'}, 'Defect Resolution Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.8617021276595744, 'unique_values_count': 81, 'semantic_type': 'date'}, 'Containment Phase': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.07446808510638298, 'unique_values_count': 7, 'semantic_type': 'category', 'categories': ['Integration Testing', 'Production', 'Unit Testing', 'UAT', 'System Testing', 'Non-production', 'Staging']}, 'Root Cause': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.2127659574468085, 'unique_values_count': 20, 'semantic_type': 'general_text'}}
+2025-05-10 18:56:13,828 - Project - INFO - Data preparation complete. 'combined_text' field created.
+2025-05-10 18:56:13,830 - Project - INFO - Loaded 94 records from Excel file.
+2025-05-10 18:56:13,830 - Project - INFO - Attempting to load FAISS index from faiss_index.bin...
+2025-05-10 18:56:13,831 - Project - INFO - Successfully loaded FAISS index from faiss_index.bin. N_vectors: 94, Dimension: 768
+2025-05-10 18:56:13,831 - Project - INFO - LLMChain initialized.
+2025-05-10 18:56:13,831 - Project - INFO - RAG system initialized successfully.
+2025-05-10 18:56:23,264 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 18:56:23,264 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 18:56:23,264 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 18:56:25,253 - Project - INFO - Retrieved 3 documents.
+2025-05-10 18:56:25,253 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 18:56:25,253 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 18:56:27,072 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods..
+2025-05-10 18:56:29,446 - Project - ERROR - Error during LLM chain invocation: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 194, in _chat_with_retry
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-05-10 18:56:29,452 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 18:56:40,063 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 18:56:40,063 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 18:56:40,063 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 18:56:40,529 - Project - INFO - Retrieved 3 documents.
+2025-05-10 18:56:40,529 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 18:56:40,529 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 18:56:40,903 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods..
+2025-05-10 18:56:43,258 - Project - ERROR - Error during LLM chain invocation: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 194, in _chat_with_retry
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-05-10 18:56:43,261 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 18:57:42,234 - __main__ - INFO - Starting FastAPI server using Uvicorn...
+2025-05-10 18:57:44,130 - Project - INFO - FastAPI application startup: Initializing RAG system...
+2025-05-10 18:57:44,130 - Project - INFO - Initializing models. Embedding: models/embedding-001, LLM: gemini-flash-2.0
+2025-05-10 18:57:44,145 - Project - INFO - Google AI Models initialized successfully.
+2025-05-10 18:57:44,146 - Project - INFO - Loading data from Defects.xlsx...
+2025-05-10 18:57:44,284 - Project - INFO - Using sheet 'Defects' with 94 rows and 10 columns
+2025-05-10 18:57:44,285 - Project - INFO - Analyzing data columns...
+2025-05-10 18:57:44,321 - Project - INFO - Column analysis complete: {'Defect ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Defect Description': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.9680851063829787, 'unique_values_count': 91, 'semantic_type': 'description'}, 'Test Case ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Component': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.7978723404255319, 'unique_values_count': 75, 'semantic_type': 'general_text'}, 'Prict': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Urgent', 'Medium', 'Low', 'High']}, 'Sev': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Low', 'Medium', 'Critical', 'High']}, 'Defect Log Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.6702127659574468, 'unique_values_count': 63, 'semantic_type': 'date'}, 'Defect Resolution Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.8617021276595744, 'unique_values_count': 81, 'semantic_type': 'date'}, 'Containment Phase': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.07446808510638298, 'unique_values_count': 7, 'semantic_type': 'category', 'categories': ['Integration Testing', 'Production', 'Unit Testing', 'UAT', 'System Testing', 'Non-production', 'Staging']}, 'Root Cause': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.2127659574468085, 'unique_values_count': 20, 'semantic_type': 'general_text'}}
+2025-05-10 18:57:44,323 - Project - INFO - Data preparation complete. 'combined_text' field created.
+2025-05-10 18:57:44,325 - Project - INFO - Loaded 94 records from Excel file.
+2025-05-10 18:57:44,325 - Project - INFO - Attempting to load FAISS index from faiss_index.bin...
+2025-05-10 18:57:44,326 - Project - INFO - Successfully loaded FAISS index from faiss_index.bin. N_vectors: 94, Dimension: 768
+2025-05-10 18:57:44,326 - Project - INFO - LLMChain initialized.
+2025-05-10 18:57:44,326 - Project - INFO - RAG system initialized successfully.
+2025-05-10 18:57:55,389 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 18:57:55,389 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 18:57:55,389 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 18:57:57,350 - Project - INFO - Retrieved 3 documents.
+2025-05-10 18:57:57,350 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 18:57:57,350 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 18:57:59,161 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods..
+2025-05-10 18:58:01,524 - Project - ERROR - Error during LLM chain invocation: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 194, in _chat_with_retry
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-05-10 18:58:01,529 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 18:58:26,487 - Project - INFO - FastAPI application startup: Initializing RAG system...
+2025-05-10 18:58:26,487 - Project - INFO - Initializing models. Embedding: models/embedding-001, LLM: models/gemini-flash-2.0
+2025-05-10 18:58:26,500 - Project - INFO - Google AI Models initialized successfully.
+2025-05-10 18:58:26,500 - Project - INFO - Loading data from Defects.xlsx...
+2025-05-10 18:58:26,644 - Project - INFO - Using sheet 'Defects' with 94 rows and 10 columns
+2025-05-10 18:58:26,645 - Project - INFO - Analyzing data columns...
+2025-05-10 18:58:26,676 - Project - INFO - Column analysis complete: {'Defect ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Defect Description': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.9680851063829787, 'unique_values_count': 91, 'semantic_type': 'description'}, 'Test Case ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Component': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.7978723404255319, 'unique_values_count': 75, 'semantic_type': 'general_text'}, 'Prict': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Urgent', 'Medium', 'Low', 'High']}, 'Sev': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Low', 'Medium', 'Critical', 'High']}, 'Defect Log Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.6702127659574468, 'unique_values_count': 63, 'semantic_type': 'date'}, 'Defect Resolution Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.8617021276595744, 'unique_values_count': 81, 'semantic_type': 'date'}, 'Containment Phase': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.07446808510638298, 'unique_values_count': 7, 'semantic_type': 'category', 'categories': ['Integration Testing', 'Production', 'Unit Testing', 'UAT', 'System Testing', 'Non-production', 'Staging']}, 'Root Cause': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.2127659574468085, 'unique_values_count': 20, 'semantic_type': 'general_text'}}
+2025-05-10 18:58:26,678 - Project - INFO - Data preparation complete. 'combined_text' field created.
+2025-05-10 18:58:26,680 - Project - INFO - Loaded 94 records from Excel file.
+2025-05-10 18:58:26,680 - Project - INFO - Attempting to load FAISS index from faiss_index.bin...
+2025-05-10 18:58:26,680 - Project - INFO - Successfully loaded FAISS index from faiss_index.bin. N_vectors: 94, Dimension: 768
+2025-05-10 18:58:26,681 - Project - INFO - LLMChain initialized.
+2025-05-10 18:58:26,681 - Project - INFO - RAG system initialized successfully.
+2025-05-10 18:58:35,569 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 18:58:35,569 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 18:58:35,569 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 18:58:37,495 - Project - INFO - Retrieved 3 documents.
+2025-05-10 18:58:37,495 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 18:58:37,495 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 18:58:38,300 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods..
+2025-05-10 18:58:40,682 - Project - ERROR - Error during LLM chain invocation: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 194, in _chat_with_retry
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-05-10 18:58:40,690 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 18:58:48,578 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 18:58:48,578 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 18:58:48,578 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 18:58:49,023 - Project - INFO - Retrieved 3 documents.
+2025-05-10 18:58:49,023 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 18:58:49,023 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 18:58:49,401 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods..
+2025-05-10 18:58:51,776 - Project - ERROR - Error during LLM chain invocation: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 194, in _chat_with_retry
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.NotFound: 404 models/gemini-flash-2.0 is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-05-10 18:58:51,782 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 19:00:16,424 - Project - INFO - FastAPI application startup: Initializing RAG system...
+2025-05-10 19:00:16,424 - Project - INFO - Initializing models. Embedding: models/embedding-001, LLM: gemini-2.0-flash-preview-image-generation
+2025-05-10 19:00:16,439 - Project - INFO - Google AI Models initialized successfully.
+2025-05-10 19:00:16,439 - Project - INFO - Loading data from Defects.xlsx...
+2025-05-10 19:00:16,583 - Project - INFO - Using sheet 'Defects' with 94 rows and 10 columns
+2025-05-10 19:00:16,584 - Project - INFO - Analyzing data columns...
+2025-05-10 19:00:16,611 - Project - INFO - Column analysis complete: {'Defect ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Defect Description': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.9680851063829787, 'unique_values_count': 91, 'semantic_type': 'description'}, 'Test Case ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Component': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.7978723404255319, 'unique_values_count': 75, 'semantic_type': 'general_text'}, 'Prict': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Urgent', 'Medium', 'Low', 'High']}, 'Sev': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Low', 'Medium', 'Critical', 'High']}, 'Defect Log Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.6702127659574468, 'unique_values_count': 63, 'semantic_type': 'date'}, 'Defect Resolution Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.8617021276595744, 'unique_values_count': 81, 'semantic_type': 'date'}, 'Containment Phase': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.07446808510638298, 'unique_values_count': 7, 'semantic_type': 'category', 'categories': ['Integration Testing', 'Production', 'Unit Testing', 'UAT', 'System Testing', 'Non-production', 'Staging']}, 'Root Cause': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.2127659574468085, 'unique_values_count': 20, 'semantic_type': 'general_text'}}
+2025-05-10 19:00:16,613 - Project - INFO - Data preparation complete. 'combined_text' field created.
+2025-05-10 19:00:16,615 - Project - INFO - Loaded 94 records from Excel file.
+2025-05-10 19:00:16,615 - Project - INFO - Attempting to load FAISS index from faiss_index.bin...
+2025-05-10 19:00:16,615 - Project - INFO - Successfully loaded FAISS index from faiss_index.bin. N_vectors: 94, Dimension: 768
+2025-05-10 19:00:16,615 - Project - INFO - LLMChain initialized.
+2025-05-10 19:00:16,616 - Project - INFO - RAG system initialized successfully.
+2025-05-10 19:00:27,278 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 19:00:27,278 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 19:00:27,278 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 19:00:29,173 - Project - INFO - Retrieved 3 documents.
+2025-05-10 19:00:29,173 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 19:00:29,173 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 19:00:30,955 - Project - ERROR - Error during LLM chain invocation: Invalid argument provided to Gemini: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.InvalidArgument: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 400, in <lambda>
+    self._add_action_func(lambda rs: rs.outcome.result())
+                                     ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 190, in _chat_with_retry
+    raise ChatGoogleGenerativeAIError(
+        f"Invalid argument provided to Gemini: {e}"
+    ) from e
+langchain_google_genai.chat_models.ChatGoogleGenerativeAIError: Invalid argument provided to Gemini: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+
+2025-05-10 19:00:30,962 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 19:00:35,234 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 19:00:35,234 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 19:00:35,234 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 19:00:35,686 - Project - INFO - Retrieved 3 documents.
+2025-05-10 19:00:35,687 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 19:00:35,687 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 19:00:36,061 - Project - ERROR - Error during LLM chain invocation: Invalid argument provided to Gemini: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.InvalidArgument: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 400, in <lambda>
+    self._add_action_func(lambda rs: rs.outcome.result())
+                                     ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 190, in _chat_with_retry
+    raise ChatGoogleGenerativeAIError(
+        f"Invalid argument provided to Gemini: {e}"
+    ) from e
+langchain_google_genai.chat_models.ChatGoogleGenerativeAIError: Invalid argument provided to Gemini: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+
+2025-05-10 19:00:36,065 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 19:00:54,231 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 19:00:54,231 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 19:00:54,231 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 19:00:54,684 - Project - INFO - Retrieved 3 documents.
+2025-05-10 19:00:54,684 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 19:00:54,684 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 19:00:55,039 - Project - ERROR - Error during LLM chain invocation: Invalid argument provided to Gemini: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.InvalidArgument: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Coding\ProjectAI\Project.py", line 539, in generate_response
+    llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 167, in invoke
+    raise e
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 127, in _call
+    response = self.generate([inputs], run_manager=run_manager)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain\chains\llm.py", line 139, in generate
+    return self.llm.generate_prompt(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<2 lines>...
+        **self.llm_kwargs,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 947, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 766, in generate
+    self._generate_with_cache(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        m,
+        ^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_core\language_models\chat_models.py", line 1012, in _generate_with_cache
+    result = self._generate(
+        messages, stop=stop, run_manager=run_manager, **kwargs
+    )
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ~~~~~~~~~~~~~~~~^
+        request=request,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        metadata=self.default_metadata,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 400, in <lambda>
+    self._add_action_func(lambda rs: rs.outcome.result())
+                                     ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\surya\AppData\Local\Programs\Python\Python313\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "D:\Coding\ProjectAI\.venv\Lib\site-packages\langchain_google_genai\chat_models.py", line 190, in _chat_with_retry
+    raise ChatGoogleGenerativeAIError(
+        f"Invalid argument provided to Gemini: {e}"
+    ) from e
+langchain_google_genai.chat_models.ChatGoogleGenerativeAIError: Invalid argument provided to Gemini: 400 The requested combination of response modalities is not supported by the model. models/gemini-2.0-flash-preview-image-generation accepts the following combination of response modalities:
+* IMAGE, TEXT
+
+2025-05-10 19:00:55,042 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 19:01:38,245 - Project - INFO - FastAPI application startup: Initializing RAG system...
+2025-05-10 19:01:38,245 - Project - INFO - Initializing models. Embedding: models/embedding-001, LLM: gemini-2.0-flash
+2025-05-10 19:01:38,258 - Project - INFO - Google AI Models initialized successfully.
+2025-05-10 19:01:38,258 - Project - INFO - Loading data from Defects.xlsx...
+2025-05-10 19:01:38,405 - Project - INFO - Using sheet 'Defects' with 94 rows and 10 columns
+2025-05-10 19:01:38,406 - Project - INFO - Analyzing data columns...
+2025-05-10 19:01:38,436 - Project - INFO - Column analysis complete: {'Defect ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Defect Description': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.9680851063829787, 'unique_values_count': 91, 'semantic_type': 'description'}, 'Test Case ID': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 1.0, 'unique_values_count': 94, 'semantic_type': 'identifier'}, 'Component': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.7978723404255319, 'unique_values_count': 75, 'semantic_type': 'general_text'}, 'Prict': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Urgent', 'Medium', 'Low', 'High']}, 'Sev': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.0425531914893617, 'unique_values_count': 4, 'semantic_type': 'category', 'categories': ['Low', 'Medium', 'Critical', 'High']}, 'Defect Log Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.6702127659574468, 'unique_values_count': 63, 'semantic_type': 'date'}, 'Defect Resolution Date': {'data_type': 'date', 'sparsity': np.float64(0.0), 'value_diversity': 0.8617021276595744, 'unique_values_count': 81, 'semantic_type': 'date'}, 'Containment Phase': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.07446808510638298, 'unique_values_count': 7, 'semantic_type': 'category', 'categories': ['Integration Testing', 'Production', 'Unit Testing', 'UAT', 'System Testing', 'Non-production', 'Staging']}, 'Root Cause': {'data_type': 'text', 'sparsity': np.float64(0.0), 'value_diversity': 0.2127659574468085, 'unique_values_count': 20, 'semantic_type': 'general_text'}}
+2025-05-10 19:01:38,439 - Project - INFO - Data preparation complete. 'combined_text' field created.
+2025-05-10 19:01:38,441 - Project - INFO - Loaded 94 records from Excel file.
+2025-05-10 19:01:38,441 - Project - INFO - Attempting to load FAISS index from faiss_index.bin...
+2025-05-10 19:01:38,441 - Project - INFO - Successfully loaded FAISS index from faiss_index.bin. N_vectors: 94, Dimension: 768
+2025-05-10 19:01:38,442 - Project - INFO - LLMChain initialized.
+2025-05-10 19:01:38,442 - Project - INFO - RAG system initialized successfully.
+2025-05-10 19:02:12,085 - Project - INFO - Received API query: 'Mobile app isssues', k=3
+2025-05-10 19:02:12,085 - Project - INFO - Starting generate_response for query: Mobile app isssues..., k=3
+2025-05-10 19:02:12,085 - Project - INFO - Retrieving top 3 documents for query: Mobile app isssues...
+2025-05-10 19:02:14,024 - Project - INFO - Retrieved 3 documents.
+2025-05-10 19:02:14,025 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 1, 'Medium': 1, 'Low': 1}, 'Sev': {'Critical': 1, 'Low': 1, 'Medium': 1}, 'Containment Phase': {'Production': 2, 'System Testing': 1}, 'Root Cause': {'Configuration issue': 1, 'Incorrect logic': 1, 'Performance issue': 1}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-01-10', 'max_date': '2025-02-01', 'span_days': 22}}
+2025-05-10 19:02:14,025 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 19:02:18,820 - Project - INFO - LLM response generated successfully.
+2025-05-10 19:02:18,820 - Project - INFO - Successfully processed query. Sending response.
+2025-05-10 19:06:21,812 - Project - INFO - Received API query: 'Mobile app issues', k=3
+2025-05-10 19:06:21,812 - Project - INFO - Starting generate_response for query: Mobile app issues..., k=3
+2025-05-10 19:06:21,812 - Project - INFO - Retrieving top 3 documents for query: Mobile app issues...
+2025-05-10 19:06:23,675 - Project - INFO - Retrieved 3 documents.
+2025-05-10 19:06:23,675 - Project - INFO - Pattern analysis complete: {'count': 3, 'patterns': {'Prict': {'Urgent': 2, 'Medium': 1}, 'Sev': {'Critical': 1, 'Low': 2}, 'Containment Phase': {'Production': 3}, 'Root Cause': {'Configuration issue': 1, 'Low contrast text': 2}}, 'date_range': {'column': 'Defect Log Date', 'min_date': '2025-02-01', 'max_date': '2025-04-29', 'span_days': 87}}
+2025-05-10 19:06:23,675 - Project - INFO - Invoking LLMChain to generate response...
+2025-05-10 19:06:27,754 - Project - INFO - LLM response generated successfully.
+2025-05-10 19:06:27,754 - Project - INFO - Successfully processed query. Sending response.
