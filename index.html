@@ -6,7 +6,6 @@
     <title>RAG System Frontend</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -96,7 +95,7 @@
         const errorArea = document.getElementById('errorArea');
 
         // API endpoint URL (ensure this matches your FastAPI backend URL)
-        const apiUrl = 'http://localhost:8000/query'; // Or your actual backend URL if deployed
+        const apiUrl = 'https://avivaaipoc.onrender.com'; // Or your actual backend URL if deployed
 
         // Event listener for the submit button
         submitButton.addEventListener('click', async () => {
@@ -141,8 +140,7 @@
                 const data = await response.json();
 
                 // Display the results
-                // Render markdown as HTML for a beautiful, natural look
-                responseDiv.innerHTML = marked.parse(data.response || "No response generated.");
+                responseDiv.textContent = data.response || "No response generated.";
 
                 // Display retrieved documents
                 if (data.retrieved_docs && data.retrieved_docs.length > 0) {

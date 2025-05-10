@@ -570,6 +570,7 @@ origins = [
     "http://127.0.0.1:5500",    # VS Code Live Server default
     "http://127.0.0.1",         # General 127.0.0.1
     "null",                     # For `file:///` origins (opening HTML directly in browser)
+    "https://horizonchaser12.github.io/AvivaAIPOC/",  # <-- Add your GitHub Pages domain here
     # Add your deployed frontend's URL here if applicable
     # e.g., "https://your-frontend-domain.com"
 ]
