@@ -55,13 +55,11 @@
             Search
         </button>
 
-        <div id="loader" class="loader"></div>
-
-        <div id="resultsArea" class="mt-8">
+        <div id="loader" class="loader"></div>        <div id="resultsArea" class="mt-8" style="display: none;">
             <h2 class="text-2xl font-semibold mb-4 text-gray-700">Results:</h2>
             <div id="response" class="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-md">
                 <h3 class="text-lg font-semibold text-indigo-700 mb-2">Generated Response:</h3>
-                <p class="text-gray-800">...</p>
+                <p class="text-gray-800"></p>
             </div>
 
             <div id="retrievedDocs" class="mb-6">
@@ -109,8 +107,7 @@
             if (!query) {
                 displayError("Please enter a query.");
                 return;
-            }
-            responseDiv.textContent = '...';
+            }            responseDiv.textContent = '';
             exceptionalDiv.innerHTML = '';
             retrievedDocsDiv.style.display = 'none';
             resultsArea.style.display = 'none';
@@ -197,10 +194,26 @@
             if (typeof value === 'boolean') return value ? 'Yes' : 'No';
             if (value instanceof Date) return value.toLocaleDateString();
             return JSON.stringify(value);
+        }        function convertMarkdownToHtml(text) {
+            // Convert bullet points with any leading whitespace (both * and - styles)
+            text = text.replace(/^[ ]*\* (.*)$/gm, '<li>$1</li>');
+            text = text.replace(/^[ ]*- (.*)$/gm, '<li>$1</li>');
+            // Convert bold text
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Convert any remaining single asterisks for italic
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            // Wrap lists in ul tags
+            if (text.includes('<li>')) {
+                text = '<ul class="list-disc pl-5 mb-3">' + text + '</ul>';
+            }
+            return text;
         }
 
         function beautifyResponse(text) {
-            return text.split('\n').filter(p => p.trim()).map(p => `<p class="mb-3">${p}</p>`).join('');
+            return text.split('\n')
+                      .filter(p => p.trim())
+                      .map(p => `<p class="mb-3">${convertMarkdownToHtml(p)}</p>`)
+                      .join('');
         }
 
         function displayError(message) {
