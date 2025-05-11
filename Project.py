@@ -26,33 +26,37 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-# Make sure you have a .env file with your GOOGLE_API_KEY or set it in your environment
 if not load_dotenv():
     logger.warning("Could not load .env file. Ensure GOOGLE_API_KEY is set in your environment.")
 elif not os.getenv("GOOGLE_API_KEY"):
     logger.warning("GOOGLE_API_KEY not found in .env file or environment.")
 
+# --- Utility function for JSON serialization ---
+def make_serializable(obj: Any) -> Any:
+    """
+    Recursively converts non-serializable objects (like datetime, numpy types)
+    in a data structure to JSON-serializable types.
+    """
+    if isinstance(obj, (datetime.date, datetime.datetime, pd.Timestamp)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {make_serializable(k): make_serializable(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [make_serializable(i) for i in obj]
+    if isinstance(obj, (np.ndarray, np.generic)): # Handle numpy types
+        return obj.tolist()
+    # Add other type conversions if necessary (e.g., custom objects)
+    return obj
 
 class AdaptiveRAGSystem:
     def __init__(self, excel_file_path: str, embedding_model: str = 'models/embedding-001',
                  llm_model: str = 'gemini-2.0-flash', temperature: float = 0.3, concise_prompt: bool = False,
                  index_file: str = "faiss_index.bin"):
-        """
-        Initialize the RAG system with specified models and data source.
-
-        Args:
-            excel_file_path: Path to the Excel file containing the knowledge base
-            embedding_model: Google embedding model to use
-            llm_model: Google LLM model to use for response generation
-            temperature: Temperature for the LLM (higher = more creative)
-            concise_prompt: Whether to use a concise prompt template
-            index_file: Path to the FAISS index file for persistence
-        """
         self.excel_file_path = excel_file_path
         self.concise_prompt = concise_prompt
         self.index_file = index_file
+        self.chunk_to_original_doc_mapping: List[int] = [] # For mapping FAISS chunk indices to original metadata indices
 
-        # Initialize models
         logger.info(f"Initializing models. Embedding: {embedding_model}, LLM: {llm_model}")
         try:
             self.embedding_model = GoogleGenerativeAIEmbeddings(model=embedding_model)
@@ -60,38 +64,36 @@ class AdaptiveRAGSystem:
             logger.info("Google AI Models initialized successfully.")
         except Exception as e:
             logger.error(f"Fatal: Failed to initialize Google AI models: {e}. Ensure GOOGLE_API_KEY is correctly set and valid.")
-            logger.error("The application might not function correctly without AI models.")
-            # Depending on desired behavior, you might want to raise the error
-            # or allow the system to run in a degraded (non-AI) mode if applicable.
-            # For this RAG system, models are crucial, so we'll make them None and handle it.
             self.embedding_model = None
             self.llm = None
-            # raise RuntimeError(f"Failed to initialize Google AI models: {e}") from e
 
-
-        # Load data and build or load index
         self.data = None
-        self.metadata = None
+        self.metadata: Optional[List[Dict[Any, Any]]] = None # Type hint for clarity
         self.index = None
-        self.dimension = None # Will be set when index is built or loaded
-        self.column_info = {}  # Store information about columns
+        self.dimension = None
+        self.column_info: Dict[str, Dict[str, Any]] = {}
 
-        if self.embedding_model and self.llm: # Proceed only if models are initialized
-            self._load_data() # This will also call _prepare_data and _analyze_columns
-
-            # Check if persisted index exists and load it, otherwise build a new one
+        if self.embedding_model and self.llm:
+            self._load_data()
             try:
                 logger.info(f"Attempting to load FAISS index from {self.index_file}...")
                 self._load_index(self.index_file)
+                 # If index is loaded, we also need to potentially load the chunk_to_original_doc_mapping
+                # This mapping should ideally be saved alongside the FAISS index.
+                # For simplicity, we'll rebuild it if loading the index directly.
+                # A more robust solution would save/load this mapping.
+                # If _build_index was called by _load_data (if index file not found), mapping is already set.
+                if not self.chunk_to_original_doc_mapping and self.data is not None and 'combined_text' in self.data.columns:
+                    logger.info("Re-populating chunk_to_original_doc_mapping after loading index (if not already set).")
+                    self._populate_chunk_mapping_from_data()
+
             except Exception as e:
                 logger.warning(f"Could not load persisted index from {self.index_file} (Reason: {e}). Building a new index...")
-                self._build_index() # Uses self.index_file by default internally
+                self._build_index() # This will also populate chunk_to_original_doc_mapping
         else:
             logger.error("Skipping data loading and index building due to model initialization failure.")
 
-
-        # Create response generation chain
-        if self.llm: # Only create chain if LLM is available
+        if self.llm:
             if concise_prompt:
                 self.response_template = """
                 You are an AI Assistant. Given the following context:{context}Answer the following question:{question}Assistant:
@@ -103,25 +105,24 @@ class AdaptiveRAGSystem:
 
                 User Query: {query}
 
-                Relevant Historical Defect Data:
+                Relevant Historical Defect Data (Chunks):
                 {context}
 
                 Provide a professional, conversational response that includes:
                 1. A clear summary of the identified issue
-                2. When this type of issue has occurred in the past (dates/frequency if available)
-                3. The root causes that were identified for similar issues
-                4. The solution or resolution that was most effective, explained in detail
-                5. Any preventative measures that could avoid this issue in the future
-                6. If multiple similar issues were found, explain any patterns or common factors
+                2. When this type of issue has occurred in the past (dates/frequency if available from context)
+                3. The root causes that were identified for similar issues (from context)
+                4. The solution or resolution that was most effective, explained in detail (from context)
+                5. Any preventative measures that could avoid this issue in the future (from context)
+                6. If multiple similar issues were found, explain any patterns or common factors (from context)
 
                 Make your response conversational and easy to understand. Avoid technical jargon unless necessary and explain any complex terms.
                 Format your response in clear paragraphs rather than as a list of facts.
 
                 Response:
                 """
-
             self.prompt = PromptTemplate(
-                input_variables=["query", "context"], # Corrected from ["question", "context"] for the detailed prompt
+                input_variables=["query", "context"],
                 template=self.response_template
             )
             self.chain = LLMChain(llm=self.llm, prompt=self.prompt)
@@ -131,15 +132,13 @@ class AdaptiveRAGSystem:
             logger.error("LLMChain could not be initialized because LLM is not available.")
 
     def _load_data(self):
-        """Load data from Excel file and prepare for embedding"""
         logger.info(f"Loading data from {self.excel_file_path}...")
         if not os.path.exists(self.excel_file_path):
             logger.error(f"Excel file not found at path: {self.excel_file_path}")
-            # Create a minimal dummy DataFrame to prevent crashes, but log error
             self.data = pd.DataFrame({'Error': [f'File not found: {self.excel_file_path}']})
-            self._prepare_data() # Process this dummy data
+            self._prepare_data()
             self.metadata = self.data.to_dict(orient='records')
-            logger.warning("Proceeding with dummy data due to missing Excel file. RAG system will not be effective.")
+            logger.warning("Proceeding with dummy data due to missing Excel file.")
             return
 
         try:
@@ -150,40 +149,27 @@ class AdaptiveRAGSystem:
                     self.data = df
                     logger.info(f"Using sheet '{sheet_name}' with {len(df)} rows and {len(df.columns)} columns")
                     break
-            
             if self.data is None:
                 logger.error("No non-empty sheets found in the Excel file. Creating dummy data.")
                 self.data = pd.DataFrame({'Error': ['No non-empty sheets in Excel file.']})
-                # raise ValueError("No non-empty sheets found in the Excel file")
 
-            self._prepare_data() # Cleans data, analyzes columns, creates 'combined_text'
-            self.metadata = self.data.to_dict(orient='records') # Store original records for retrieval
+            self._prepare_data()
+            self.metadata = self.data.to_dict(orient='records')
             logger.info(f"Loaded {len(self.data)} records from Excel file.")
         except Exception as e:
             logger.error(f"Error loading data: {e}", exc_info=True)
-            logger.warning("Creating dummy data due to data loading error. RAG system will not be effective.")
+            logger.warning("Creating dummy data due to data loading error.")
             self.data = pd.DataFrame({'Error': [f'Error loading data: {str(e)}']})
             self._prepare_data()
             self.metadata = self.data.to_dict(orient='records')
-            # raise # Optionally re-raise
 
     def _prepare_data(self):
-        """Prepare data for embedding and retrieval"""
         if self.data is None:
             logger.error("Cannot prepare data: self.data is None.")
             return
-
-        # Replace NaN with empty strings
         self.data = self.data.fillna('')
-        
-        # Drop completely empty rows and columns
         self.data = self.data.dropna(how='all').dropna(axis=1, how='all')
-        
-        # Analyze columns (must be done before creating combined_text if it relies on column types)
         self._analyze_columns()
-        
-        # For embedding, treat all columns equally by combining them
-        # Ensure 'combined_text' column itself is not included in the join if it somehow exists
         self.data['combined_text'] = self.data.apply(
             lambda row: ' '.join(f"{col}: {val}" for col, val in row.items() if val != '' and col != 'combined_text'),
             axis=1
@@ -191,181 +177,193 @@ class AdaptiveRAGSystem:
         logger.info("Data preparation complete. 'combined_text' field created.")
 
     def _analyze_columns(self):
-        """Analyze columns to gather information about data types and content"""
-        if self.data is None:
-            logger.error("Cannot analyze columns: self.data is None.")
-            return
-        
+        if self.data is None: return
         logger.info("Analyzing data columns...")
-        columns = self.data.columns
-        self.column_info = {} # Reset column info
-        
-        for col in columns:
-            if col == 'combined_text': # Skip our generated column
-                continue
-                
+        self.column_info = {}
+        for col in self.data.columns:
+            if col == 'combined_text': continue
             col_data = self.data[col]
+            data_type = 'text'
+            if pd.api.types.is_numeric_dtype(col_data.infer_objects()): data_type = 'numeric'
+            elif self._is_date_column(col_data): data_type = 'date'
             
-            # Determine data type
-            data_type = 'text' # Default
-            if pd.api.types.is_numeric_dtype(col_data.infer_objects()): # Infer objects to catch numbers stored as strings
-                data_type = 'numeric'
-            elif self._is_date_column(col_data):
-                data_type = 'date'
-            
-            # Calculate sparsity (proportion of empty or NaN values)
-            # Ensure we count NaNs correctly after fillna('') might have turned them to empty strings
             empty_count = (col_data == '').sum() + col_data.isna().sum()
-            sparsity = empty_count / max(1, len(col_data)) # Avoid division by zero for empty series
-            
-            # Calculate value diversity (proportion of unique values)
-            # Ensure NaNs/empty strings are handled consistently in nunique
-            unique_values = col_data.nunique(dropna=False) # Count NaNs/empty as a unique value if present
+            sparsity = empty_count / max(1, len(col_data))
+            unique_values = col_data.nunique(dropna=False)
             value_diversity = unique_values / max(1, len(col_data))
             
             self.column_info[col] = {
-                'data_type': data_type,
-                'sparsity': sparsity,
-                'value_diversity': value_diversity,
-                'unique_values_count': unique_values
+                'data_type': data_type, 'sparsity': sparsity,
+                'value_diversity': value_diversity, 'unique_values_count': unique_values
             }
-            
-            # Semantic type detection (example logic from original)
             if data_type == 'text':
                 avg_len = col_data.astype(str).str.len().mean() if not col_data.empty else 0
-                if value_diversity > 0.8: # High diversity
-                    self.column_info[col]['semantic_type'] = 'description' if avg_len > 50 else 'identifier'
-                elif value_diversity < 0.2 and unique_values < 20 : # Low diversity, few unique values
+                if value_diversity > 0.8: self.column_info[col]['semantic_type'] = 'description' if avg_len > 50 else 'identifier'
+                elif value_diversity < 0.2 and unique_values < 20:
                      self.column_info[col]['semantic_type'] = 'category'
-                     # Only store categories if there are a manageable number
                      self.column_info[col]['categories'] = col_data.unique().tolist() if unique_values < 20 else 'Too many to list'
-                else:
-                    self.column_info[col]['semantic_type'] = 'general_text'
-
-            elif data_type == 'date':
-                self.column_info[col]['semantic_type'] = 'date'
+                else: self.column_info[col]['semantic_type'] = 'general_text'
+            elif data_type == 'date': self.column_info[col]['semantic_type'] = 'date'
         logger.info(f"Column analysis complete: {self.column_info}")
 
     def _is_date_column(self, series: pd.Series) -> bool:
-        """Check if a column appears to contain date values"""
-        if series.empty:
-            return False
-        # Attempt to convert a sample to datetime, more robustly
+        if series.empty: return False
         try:
-            # Try converting non-null values only, up to a certain sample size
             sample = series.dropna().sample(min(len(series.dropna()), 100)) if not series.dropna().empty else pd.Series(dtype=object)
-            if sample.empty and series.notna().any(): # If all were NaN but some original values exist
-                 sample = series.loc[series.notna()].head(100)
-
-
-            if sample.empty: return False # If still empty (all NaNs or truly empty series)
-
-            # Attempt conversion, if a high percentage succeeds, it's likely a date column
+            if sample.empty and series.notna().any(): sample = series.loc[series.notna()].head(100)
+            if sample.empty: return False
             converted_sample = pd.to_datetime(sample, errors='coerce')
-            # Check if more than 80% of the non-null sample converted successfully
             success_rate = converted_sample.notna().sum() / max(1, len(sample))
             return success_rate > 0.8
-        except Exception:
-            return False
-            
-    def _build_index(self, chunk_size: int = 1000, chunk_overlap: int = 200):
-        """Generate embeddings and build FAISS index with dynamic chunking options"""
-        if self.data is None or 'combined_text' not in self.data.columns or self.embedding_model is None:
-            logger.error("Cannot build FAISS index: Data, 'combined_text' column, or embedding model is not available.")
-            # Create a dummy index to prevent downstream errors if essential
-            self.dimension = 768 # A common embedding dimension, e.g. for 'models/embedding-001'
-            logger.warning(f"Creating a dummy FAISS index with dimension {self.dimension} as fallback.")
-            self.index = faiss.IndexFlatL2(self.dimension)
-            # Add a single zero vector so index.ntotal is not 0, which can cause issues
-            self.index.add(np.zeros((1, self.dimension), dtype='float32'))
+        except Exception: return False
+
+    def _populate_chunk_mapping_from_data(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+        """Helper to (re)populate chunk_to_original_doc_mapping from self.data.
+           This is needed if the mapping isn't saved/loaded with the FAISS index.
+        """
+        if self.data is None or 'combined_text' not in self.data.columns:
+            logger.warning("Cannot populate chunk mapping: Data or 'combined_text' column is not available.")
+            self.chunk_to_original_doc_mapping = []
             return
 
-        logger.info(f"Building FAISS index from 'combined_text'. Chunk size: {chunk_size}, Overlap: {chunk_overlap}")
+        documents_content = self.data['combined_text'].tolist()
+        if not documents_content or all(s.strip() == "" for s in documents_content):
+            self.chunk_to_original_doc_mapping = []
+            return
+            
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size, separators=["\n\n", "\n", " ", ""], chunk_overlap=chunk_overlap
+        )
+        
+        langchain_documents = []
+        for i, doc_content_str in enumerate(documents_content):
+            if doc_content_str.strip():
+                langchain_documents.append(Document(page_content=doc_content_str, metadata={"original_doc_index": i}))
+        
+        if not langchain_documents:
+            self.chunk_to_original_doc_mapping = []
+            return
+            
+        split_documents = text_splitter.split_documents(langchain_documents)
+        
+        self.chunk_to_original_doc_mapping = []
+        if split_documents:
+            for chunk_doc in split_documents:
+                self.chunk_to_original_doc_mapping.append(chunk_doc.metadata["original_doc_index"])
+        logger.info(f"Populated chunk_to_original_doc_mapping with {len(self.chunk_to_original_doc_mapping)} entries.")
+
+
+    def _build_index(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+        if self.data is None or 'combined_text' not in self.data.columns or self.embedding_model is None:
+            logger.error("Cannot build FAISS index: Data, 'combined_text', or embedding model not available.")
+            self.dimension = 768
+            self.index = faiss.IndexFlatL2(self.dimension)
+            self.index.add(np.zeros((1, self.dimension), dtype='float32'))
+            self.chunk_to_original_doc_mapping = []
+            return
+
+        logger.info(f"Building FAISS index. Chunk size: {chunk_size}, Overlap: {chunk_overlap}")
         try:
             documents_content = self.data['combined_text'].tolist()
-
             if not documents_content or all(s.strip() == "" for s in documents_content):
-                logger.warning("No valid text content found in 'combined_text' for embedding. Index will be empty or dummy.")
-                self.dimension = self.embedding_model.client.get_embedding_dimensionality(self.embedding_model.model) if hasattr(self.embedding_model.client, 'get_embedding_dimensionality') else 768
+                logger.warning("No valid text content for embedding. Index will be dummy.")
+                # ... (dummy index creation as before)
+                self.dimension = getattr(self.embedding_model.client, 'get_embedding_dimensionality', lambda m: 768)(self.embedding_model.model)
                 self.index = faiss.IndexFlatL2(self.dimension)
                 self.index.add(np.zeros((1, self.dimension), dtype='float32'))
+                self.chunk_to_original_doc_mapping = []
                 return
 
-            # Text splitting
             from langchain.text_splitter import RecursiveCharacterTextSplitter
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size, separators=["\n\n", "\n", " ", ""], chunk_overlap=chunk_overlap
             )
-            # Create Document objects for the splitter
-            langchain_documents = [Document(page_content=doc) for doc in documents_content if doc.strip()]
+            
+            langchain_documents = []
+            for i, doc_content_str in enumerate(documents_content): # Iterate with index
+                if doc_content_str.strip():
+                    # Store original document index in the metadata of the Document object
+                    langchain_documents.append(Document(page_content=doc_content_str, metadata={"original_doc_index": i}))
             
             if not langchain_documents:
-                logger.warning("No non-empty documents after filtering for text splitting. Index will be dummy.")
-                self.dimension = 768 # Fallback dimension
+                logger.warning("No non-empty documents for text splitting. Index will be dummy.")
+                # ... (dummy index creation)
+                self.dimension = 768 
                 self.index = faiss.IndexFlatL2(self.dimension)
                 self.index.add(np.zeros((1, self.dimension), dtype='float32'))
+                self.chunk_to_original_doc_mapping = []
                 return
 
-            split_documents = text_splitter.split_documents(langchain_documents)
+            split_documents = text_splitter.split_documents(langchain_documents) # This preserves metadata by default
             
             if not split_documents:
                 logger.warning("Text splitting resulted in zero documents. Index will be dummy.")
+                # ... (dummy index creation)
+                self.dimension = 768
+                self.index = faiss.IndexFlatL2(self.dimension)
+                self.index.add(np.zeros((1, self.dimension), dtype='float32'))
+                self.chunk_to_original_doc_mapping = []
+                return
+
+            # Populate self.chunk_to_original_doc_mapping
+            self.chunk_to_original_doc_mapping = [doc.metadata["original_doc_index"] for doc in split_documents]
+
+            logger.info(f"Generating embeddings for {len(split_documents)} document chunks...")
+            doc_embeddings_list = self.embedding_model.embed_documents([doc.page_content for doc in split_documents])
+
+            if not doc_embeddings_list or not doc_embeddings_list[0]:
+                logger.error("Embedding process yielded no embeddings.")
+                # ... (dummy index creation)
                 self.dimension = 768
                 self.index = faiss.IndexFlatL2(self.dimension)
                 self.index.add(np.zeros((1, self.dimension), dtype='float32'))
                 return
 
-            logger.info(f"Generating embeddings for {len(split_documents)} document chunks...")
-            doc_embeddings = self.embedding_model.embed_documents([doc.page_content for doc in split_documents])
-
-            if not doc_embeddings or not doc_embeddings[0]:
-                logger.error("Embedding process yielded no embeddings. Cannot build FAISS index.")
-                self.dimension = 768 # Fallback
-                self.index = faiss.IndexFlatL2(self.dimension)
-                self.index.add(np.zeros((1, self.dimension), dtype='float32'))
-                return
-
-            self.dimension = len(doc_embeddings[0])
+            self.dimension = len(doc_embeddings_list[0])
             self.index = faiss.IndexFlatL2(self.dimension)
-            self.index.add(np.array(doc_embeddings, dtype='float32'))
+            self.index.add(np.array(doc_embeddings_list, dtype='float32'))
 
             faiss.write_index(self.index, self.index_file)
-            logger.info(f"Built and saved FAISS index to '{self.index_file}' with {self.index.ntotal} vectors, dimension {self.dimension}")
+            # Ideally, save self.chunk_to_original_doc_mapping here too, e.g., to a JSON file.
+            # For now, it's rebuilt if needed upon loading.
+            logger.info(f"Built and saved FAISS index to '{self.index_file}' with {self.index.ntotal} vectors. Mapping has {len(self.chunk_to_original_doc_mapping)} entries.")
+
         except Exception as e:
             logger.error(f"Error building FAISS search index: {e}", exc_info=True)
-            # Fallback to a dummy index
-            self.dimension = 768 # Default if error before dimension is known
-            logger.warning(f"Creating a dummy FAISS index with dimension {self.dimension} due to build error.")
+            self.dimension = 768
             self.index = faiss.IndexFlatL2(self.dimension)
             self.index.add(np.zeros((1, self.dimension), dtype='float32'))
-            # raise # Optionally re-raise
+            self.chunk_to_original_doc_mapping = []
+
 
     def _load_index(self, index_file: str):
-        """Load FAISS index from disk if it exists"""
         if not os.path.exists(index_file):
-            logger.warning(f"FAISS index file {index_file} not found. A new one will be built if _build_index is called.")
             raise FileNotFoundError(f"FAISS index file {index_file} not found.")
         try:
             self.index = faiss.read_index(index_file)
-            self.dimension = self.index.d # Set dimension from loaded index
+            self.dimension = self.index.d
             logger.info(f"Successfully loaded FAISS index from {index_file}. N_vectors: {self.index.ntotal}, Dimension: {self.dimension}")
+            # NOTE: self.chunk_to_original_doc_mapping should also be loaded here if it was saved.
+            # If not saved, it will be repopulated by _populate_chunk_mapping_from_data in __init__.
         except Exception as e:
             logger.error(f"Error loading FAISS index from {index_file}: {e}", exc_info=True)
-            raise # Re-raise to be caught by the constructor's try-except
+            raise
 
-    def retrieve(self, query: str, k: int = 3) -> List[Dict[Any, Any]]:
+    def retrieve(self, query: str, k: int = 3) -> List[Dict[str, Any]]:
         """
-        Retrieve the top k most relevant documents for the query.
+        Retrieve the top k most relevant document CHUNKS for the query.
+        Returns a list of dictionaries, each containing the chunk content, 
+        its original document ID (metadata index), and similarity score.
         """
-        if self.index is None or self.embedding_model is None or self.metadata is None:
-            logger.warning("Cannot retrieve: FAISS index, embedding model, or metadata is not available.")
+        if self.index is None or self.embedding_model is None or self.metadata is None or not self.chunk_to_original_doc_mapping:
+            logger.warning("Cannot retrieve: Index, model, metadata, or chunk mapping not available.")
             return []
-        if self.index.ntotal == 0 :
+        if self.index.ntotal == 0:
              logger.warning("Retrieval attempted but FAISS index is empty.")
              return []
 
-
-        logger.info(f"Retrieving top {k} documents for query: {query[:50]}...")
+        logger.info(f"Retrieving top {k} document chunks for query: {query[:50]}...")
         try:
             query_embedding = self.embedding_model.embed_query(query)
         except Exception as e:
@@ -373,332 +371,306 @@ class AdaptiveRAGSystem:
             return []
         
         actual_k = min(k, self.index.ntotal)
-        if actual_k == 0:
-            logger.warning("No documents in index to retrieve.")
-            return []
-        if actual_k < k:
-            logger.warning(f"Requested k={k} documents, but only {actual_k} available in index. Retrieving {actual_k}.")
+        if actual_k == 0: return []
+        if actual_k < k: logger.warning(f"Requested k={k}, retrieving {actual_k}.")
             
-        distances, indices = self.index.search(np.array([query_embedding], dtype='float32'), actual_k)
+        distances, faiss_indices = self.index.search(np.array([query_embedding], dtype='float32'), actual_k)
         
-        results = []
-        for i, doc_idx_in_faiss in enumerate(indices[0]):
-            # The indices from FAISS correspond to the order of embeddings added,
-            # which should match the order of `split_documents` if `_build_index` was successful.
-            # However, self.metadata corresponds to the original, unsplit documents.
-            # This RAG setup implies that FAISS indices map directly to self.metadata indices.
-            # This is true if `split_documents` was NOT used and `documents_content` (from `self.data['combined_text']`)
-            # was directly embedded. If `split_documents` *was* used, then `doc_idx_in_faiss` refers to a *chunk*,
-            # not an original document in `self.metadata`.
-            # The original code's `_build_index` embeds `split_documents` but `retrieve` uses `self.metadata`.
-            # This is a common mismatch. For simplicity here, we assume FAISS indices map to metadata indices.
-            # A more robust solution would store metadata alongside each chunk or map chunk indices back to original doc indices.
+        retrieved_chunks_info = []
+        # We need the actual chunk content for the LLM context
+        # This requires access to the `split_documents` list from `_build_index` or re-splitting.
+        # For simplicity, and to avoid storing all split_documents in memory, we'll focus on returning
+        # original document references. The format_retrieved_document will use the full doc.
+        # This is a compromise. A more advanced system would pass chunk content to LLM.
 
-            # Assuming direct mapping for now, as per original structure:
-            original_doc_idx = int(doc_idx_in_faiss) # FAISS returns int64, ensure it's Python int
+        # Re-fetch split documents to get chunk content (can be inefficient, better to store them or map IDs carefully)
+        # This part is tricky without storing all split docs.
+        # For now, we'll use the original document content for formatting, acknowledging this simplification.
+        # The "context" for the LLM will be based on the full original documents corresponding to the best chunks.
+
+        # Get original documents based on chunk mapping
+        original_doc_indices_found = set()
+        results = []
+
+        for i, chunk_idx_in_faiss in enumerate(faiss_indices[0]):
+            if not (0 <= chunk_idx_in_faiss < len(self.chunk_to_original_doc_mapping)):
+                logger.warning(f"FAISS index {chunk_idx_in_faiss} out of bounds for chunk mapping. Skipping.")
+                continue
+            
+            original_doc_idx = self.chunk_to_original_doc_mapping[chunk_idx_in_faiss]
 
             if 0 <= original_doc_idx < len(self.metadata):
-                doc_content = self.metadata[original_doc_idx].copy() # Get the original document
+                # If we only want to add each unique original document once to results
+                if original_doc_idx in original_doc_indices_found and len(results) >= actual_k : # Avoid processing same doc if already have enough unique docs
+                    continue
                 
-                # Remove the combined text field from the result if it exists
-                if 'combined_text' in doc_content:
-                    del doc_content['combined_text']
+                doc_content_full = self.metadata[original_doc_idx].copy()
+                
+                # The ID for the API response should be the original document's ID (its index in self.metadata)
+                doc_id_for_api = original_doc_idx 
+
+                if 'combined_text' in doc_content_full:
+                    del doc_content_full['combined_text']
                 
                 result = {
-                    "content": doc_content, # This is the full original document content
+                    "id": doc_id_for_api, # ID of the original document
+                    "content": doc_content_full, # Full content of the original document
+                    # "chunk_content": split_documents[chunk_idx_in_faiss].page_content, # IDEALLY, but requires access to split_documents
                     "distance": float(distances[0][i]),
-                    "similarity": 1 / (1 + float(distances[0][i])) # Convert L2 distance to a similarity score
+                    "similarity": 1 / (1 + float(distances[0][i])) # Example similarity
                 }
                 results.append(result)
+                original_doc_indices_found.add(original_doc_idx)
+
+                if len(results) >= actual_k: # Stop if we have k unique documents
+                    break 
             else:
-                logger.warning(f"Retrieved FAISS index {original_doc_idx} is out of bounds for metadata (len: {len(self.metadata)}). Skipping.")
+                logger.warning(f"Original document index {original_doc_idx} (from chunk {chunk_idx_in_faiss}) is out of bounds for metadata. Skipping.")
         
-        logger.info(f"Retrieved {len(results)} documents.")
+        logger.info(f"Retrieved {len(results)} unique original documents based on top chunks.")
         return results
 
+
     def format_retrieved_document(self, doc: Dict) -> str:
-        """Format a retrieved document for better readability in the LLM context"""
+        """
+        Format a retrieved document (which is an original document's content)
+        for better readability in the LLM context.
+        """
         formatted_content = []
+        # doc["content"] here is the full original document content
         for key, value in doc["content"].items():
-            if key == 'combined_text': # Should have been removed already by retrieve
-                continue
-            # Ensure value is a string, format it, and handle empty/None values gracefully
             value_str = str(value) if value is not None else ""
-            if value_str.strip(): # Only include if there's actual content
+            if value_str.strip():
                 formatted_key = key.replace('_', ' ').title()
                 formatted_content.append(f"{formatted_key}: {value_str}")
         
-        # Add similarity score to the context for the LLM
-        formatted_content.append(f"RelevanceScore: {doc['similarity']:.4f}") # LLM might use this
-        return "\n".join(formatted_content)
+        formatted_content.append(f"RelevanceScoreToQueryChunk: {doc['similarity']:.4f}")
+        return f"--- Document ID: {doc['id']} ---\n" + "\n".join(formatted_content)
+
 
     def analyze_patterns(self, retrieved_docs: List[Dict]) -> Dict[str, Any]:
-        """Analyze patterns across retrieved documents (e.g., common values, date ranges)"""
         if not retrieved_docs:
             return {"count": 0, "patterns": {}, "date_range": None}
-            
-        analysis = {
-            "count": len(retrieved_docs),
-            "patterns": {},
-            "date_range": None # To store info about date spans if found
-        }
+        analysis = {"count": len(retrieved_docs), "patterns": {}, "date_range": None}
         
-        # Iterate through columns defined in self.column_info
         for col_name, info in self.column_info.items():
-            # Focus on categorical or low-diversity text columns for common value patterns
-            if info.get('semantic_type') == 'category' or (info.get('data_type') == 'text' and info.get('value_diversity', 1.0) < 0.5):
+            if info.get('semantic_type') == 'category' or \
+               (info.get('data_type') == 'text' and info.get('value_diversity', 1.0) < 0.5):
                 value_counts = {}
-                for doc in retrieved_docs:
+                for doc in retrieved_docs: # doc["content"] is the full original document
                     value = doc["content"].get(col_name)
-                    if value is not None and str(value).strip(): # Ensure value exists and is not empty
+                    if value is not None and str(value).strip():
                         value_str = str(value)
                         value_counts[value_str] = value_counts.get(value_str, 0) + 1
-                if value_counts:
-                    analysis["patterns"][col_name] = value_counts
+                if value_counts: analysis["patterns"][col_name] = value_counts
             
-            # Date range analysis for date columns
             if info.get('data_type') == 'date':
                 dates = []
                 for doc in retrieved_docs:
                     date_val = doc["content"].get(col_name)
                     if date_val:
                         try:
-                            # Convert to datetime, handling various possible formats if necessary
-                            # pd.to_datetime is quite flexible
                             dt = pd.to_datetime(date_val, errors='coerce')
-                            if pd.notna(dt):
-                                dates.append(dt)
-                        except Exception:
-                            logger.debug(f"Could not parse date value '{date_val}' in column '{col_name}' during pattern analysis.")
-                            pass # Ignore if a value can't be parsed
-                
+                            if pd.notna(dt): dates.append(dt)
+                        except Exception: pass
                 if dates:
-                    min_date = min(dates)
-                    max_date = max(dates)
-                    if analysis["date_range"] is None: # Take the first date column found
+                    min_date, max_date = min(dates), max(dates)
+                    if analysis["date_range"] is None:
                         analysis["date_range"] = {
-                            "column": col_name,
-                            "min_date": min_date.strftime("%Y-%m-%d"),
-                            "max_date": max_date.strftime("%Y-%m-%d"),
-                            "span_days": (max_date - min_date).days
+                            "column": col_name, "min_date": min_date.strftime("%Y-%m-%d"),
+                            "max_date": max_date.strftime("%Y-%m-%d"), "span_days": (max_date - min_date).days
                         }
         logger.info(f"Pattern analysis complete: {analysis}")
         return analysis
 
     def generate_response(self, query: str, k: int = 3) -> Dict[str, Any]:
-        """End-to-end RAG process: retrieve documents, analyze patterns, and generate response"""
         if not self.chain:
-            logger.error("Cannot generate response: LLM chain is not initialized (likely due to LLM/API key issues).")
+            logger.error("Cannot generate response: LLM chain not initialized.")
             return {
-                "response": "I am currently unable to process your request due to an internal system issue. Please try again later.",
-                "retrieved_docs": [],
-                "pattern_analysis": {"count": 0}
+                "response": "System error: Unable to process request.",
+                "retrieved_docs": [], "pattern_analysis": {"count": 0}
             }
 
         logger.info(f"Starting generate_response for query: {query[:100]}..., k={k}")
+        # retrieved_docs now contains full original documents with an 'id'
         retrieved_docs = self.retrieve(query, k)
 
         if not retrieved_docs:
             logger.warning("No relevant documents found for the query.")
             return {
-                "response": "I couldn't find any specific information related to your query in the available data.",
-                "retrieved_docs": [],
-                "pattern_analysis": {"count": 0}
+                "response": "I couldn't find specific information for your query.",
+                "retrieved_docs": [], "pattern_analysis": {"count": 0}
             }
 
-        # Format documents for context
+        # doc_contexts will be formatted strings of the *full original documents*
         doc_contexts = [self.format_retrieved_document(doc) for doc in retrieved_docs]
-        
-        # Analyze patterns in the retrieved documents
         pattern_analysis = self.analyze_patterns(retrieved_docs)
         
-        # Construct the full context string for the LLM
-        context_parts = ["Retrieved Information Entries:"]
-        context_parts.extend(doc_contexts) # Add individual document details
+        context_parts = ["Retrieved Information (Original Documents corresponding to best matching text portions):"]
+        context_parts.extend(doc_contexts)
 
-        # Add a summary of patterns if significant
         if pattern_analysis["count"] > 0:
-            context_parts.append("\nSummary of Patterns Found:")
+            context_parts.append("\nSummary of Patterns Found in these Documents:")
             context_parts.append(f"- Number of similar records found: {pattern_analysis['count']}")
             if pattern_analysis.get("date_range"):
                 dr = pattern_analysis["date_range"]
                 context_parts.append(f"- These records span from {dr['min_date']} to {dr['max_date']} (Column: {dr['column']}).")
             if pattern_analysis.get("patterns"):
                 for col, val_counts in pattern_analysis["patterns"].items():
-                    # Only show most frequent or if few categories
                     if len(val_counts) < 5 or any(c > 1 for c in val_counts.values()):
-                        common_vals_str = ", ".join([f"'{val}' ({count} times)" for val, count in sorted(val_counts.items(), key=lambda item: item[1], reverse=True)[:3]]) # Top 3
+                        common_vals_str = ", ".join([f"'{val}' ({count} times)" for val, count in sorted(val_counts.items(), key=lambda item: item[1], reverse=True)[:3]])
                         context_parts.append(f"- Common values for '{col.replace('_',' ').title()}': {common_vals_str}.")
         
         final_context = "\n\n===\n\n".join(context_parts)
-        logger.debug(f"Context for LLM: {final_context[:500]}...") # Log beginning of context
+        logger.debug(f"Context for LLM (first 500 chars): {final_context[:500]}...")
 
-        # Generate response using LLM
         logger.info("Invoking LLMChain to generate response...")
         try:
             llm_response_dict = self.chain.invoke({"query": query, "context": final_context})
-            response_text = llm_response_dict.get("text", "No response text generated by LLM.")
-            logger.info("LLM response generated successfully.")
+            response_text = llm_response_dict.get("text", "No response text generated.")
+            logger.info("LLM response generated.")
         except Exception as e:
             logger.error(f"Error during LLM chain invocation: {e}", exc_info=True)
-            response_text = "I encountered an issue while trying to formulate a response based on the retrieved information."
+            response_text = "Error formulating response from retrieved information."
         
         return {
             "response": response_text,
-            "retrieved_docs": retrieved_docs, # Return the structured docs for frontend
-            "pattern_analysis": pattern_analysis # Return pattern analysis for frontend
+            "retrieved_docs": retrieved_docs, # These are full docs with 'id'
+            "pattern_analysis": pattern_analysis
         }
 
     def get_column_info(self) -> Dict[str, Dict[str, Any]]:
-        """Get information about detected columns and their characteristics"""
         return self.column_info
+
+    def get_documents_by_ids(self, doc_ids: List[Union[int, str]]) -> List[Dict[Any, Any]]:
+        """Retrieve full documents from metadata given their IDs (indices)."""
+        if self.metadata is None:
+            logger.warning("Metadata is not available to fetch documents by IDs.")
+            return []
+        
+        docs_to_return = []
+        for doc_id in doc_ids:
+            try:
+                idx = int(doc_id)
+                if 0 <= idx < len(self.metadata):
+                    doc_content = self.metadata[idx].copy()
+                    if 'combined_text' in doc_content: # Remove helper field
+                        del doc_content['combined_text']
+                    docs_to_return.append({"id": idx, "content": doc_content})
+                else:
+                    logger.warning(f"Requested document ID {idx} is out of bounds for metadata.")
+            except ValueError:
+                logger.warning(f"Invalid document ID format: {doc_id}. Must be integer-like.")
+            except Exception as e:
+                logger.error(f"Error retrieving document for ID {doc_id}: {e}", exc_info=True)
+        return docs_to_return
 
 # --- FastAPI App Setup ---
 app = FastAPI(
     title="Adaptive RAG System API",
     description="API for querying a RAG system backed by an Excel knowledge base.",
-    version="1.0.0"
+    version="1.1.0" # Incremented version
 )
 
-# --- CORS (Cross-Origin Resource Sharing) Middleware ---
-# Allows your frontend (running on a different port/domain) to communicate with this API.
 origins = [
-    "http://localhost",         # General localhost
-    "http://localhost:3000",    # Common for React dev server
-    "http://localhost:8000",    # If frontend is served by FastAPI itself (e.g. static files)
-    "http://localhost:8080",    # Common for other dev servers
-    "http://127.0.0.1:5500",    # VS Code Live Server default
-    "http://127.0.0.1",         # General 127.0.0.1
-    "null",                     # For `file:///` origins (opening HTML directly in browser)
-    "https://horizonchaser12.github.io",  # <-- Correct GitHub Pages origin, no trailing slash or path
-    # Add your deployed frontend's URL here if applicable
+    "http://localhost", "http://localhost:3000", "http://localhost:8000",
+    "http://localhost:8080", "http://127.0.0.1:5500", "http://127.0.0.1",
+    "null", "https://horizonchaser12.github.io",
 ]
-
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  # Specific origins allowed
-    # allow_origins=["*"], # Alternatively, allow all origins (less secure)
-    allow_credentials=True, # Allow cookies
-    allow_methods=["*"],    # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],    # Allow all headers
+    CORSMiddleware, allow_origins=origins, allow_credentials=True,
+    allow_methods=["*"], allow_headers=["*"],
 )
 
-# --- Pydantic Models for API Request and Response ---
+# --- Pydantic Models ---
 class QueryRequest(BaseModel):
     query: str
-    k: int = 3 # Default number of documents to retrieve
+    k: int = 3
 
 class QueryResponse(BaseModel):
     response: str
-    retrieved_docs: List[Dict[Any, Any]] # List of retrieved document dictionaries
-    pattern_analysis: Dict[str, Any]    # Dictionary of pattern analysis
+    retrieved_docs: List[Dict[Any, Any]] # Each dict should have 'id' and 'content'
+    pattern_analysis: Dict[str, Any]
 
-# Global variable to hold the RAG system instance
+class DocumentDetailsRequest(BaseModel):
+    doc_ids: List[Union[int, str]] # Document IDs (expected to be indices of metadata)
+
+class DocumentDetailsResponse(BaseModel):
+    documents: List[Dict[Any, Any]] # List of document dicts, each with 'id' and 'content'
+
+# --- Global RAG System Instance ---
 rag_system_instance: Optional[AdaptiveRAGSystem] = None
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the RAG system when the FastAPI application starts."""
     global rag_system_instance
     logger.info("FastAPI application startup: Initializing RAG system...")
     try:
-        # Ensure 'hehe.xlsx' (or your chosen file) is in the correct path relative to where the script is run
-        # Or use an absolute path.
-        excel_file = "Defects.xlsx"
+        excel_file = "Defects.xlsx" # Ensure this file exists or is created
         if not os.path.exists(excel_file):
-            logger.warning(f"Knowledge base file '{excel_file}' not found at startup. Creating a dummy file for system to run.")
-            # Create a dummy excel file if it doesn't exist, so the system can start
-            # This is for demonstration; in production, you'd ensure the file exists.
+            logger.warning(f"KB file '{excel_file}' not found. Creating dummy file.")
             dummy_df = pd.DataFrame({
-                'ID': [1, 2, 3],
-                'Problem Description': ['Login button not working on Chrome', 'Website loads very slowly after 5 PM', 'Error 503 when submitting payment'],
-                'Solution': ['Cleared browser cache and cookies, worked.', 'Identified high traffic, scaled up server resources.', 'Payment gateway API was down, issue resolved after they fixed it.'],
-                'Date Reported': [datetime.date(2023,1,10), datetime.date(2023,2,15), datetime.date(2023,3,20)],
-                'Status': ['Closed', 'Closed', 'Closed']
+                'ID_Col': [1, 2, 3], 'Description': ['Login fail', 'Slow load', 'Payment error'],
+                'Solution': ['Cache clear', 'Server scale', 'Gateway fix'],
+                'Date': [datetime.date(2023,1,10), datetime.date(2023,2,15), datetime.date(2023,3,20)]
             })
             dummy_df.to_excel(excel_file, index=False)
             logger.info(f"Created dummy '{excel_file}'.")
-
-
+        
         rag_system_instance = AdaptiveRAGSystem(excel_file_path=excel_file)
         logger.info("RAG system initialized successfully.")
     except Exception as e:
         logger.error(f"CRITICAL: Failed to initialize RAG system during startup: {e}", exc_info=True)
-        rag_system_instance = None # Ensure it's None if initialization fails
-        # Depending on policy, you might want the app to fail to start entirely:
-        # raise RuntimeError(f"RAG system initialization failed: {e}") from e
+        rag_system_instance = None
 
 @app.post("/query", response_model=QueryResponse)
 async def process_query_endpoint(request: QueryRequest):
-    """
-    Endpoint to process a user query using the RAG system.
-    """
     if rag_system_instance is None:
-        logger.error("API call to /query failed: RAG system is not available (initialization may have failed).")
-        raise HTTPException(status_code=503, detail="RAG system is not initialized or currently unavailable. Please try again later.")
+        logger.error("API call to /query failed: RAG system not available.")
+        raise HTTPException(status_code=503, detail="RAG system unavailable.")
 
     logger.info(f"Received API query: '{request.query}', k={request.k}")
     try:
         result = rag_system_instance.generate_response(request.query, request.k)
-        
-        # FastAPI will automatically handle serialization of standard Python types,
-        # including Pydantic models and basic dicts/lists.
-        # Custom objects like pd.Timestamp need to be converted.
-        # The `make_serializable` function from previous context is good for this.
-
-        def make_serializable(obj):
-            if isinstance(obj, (datetime.date, datetime.datetime, pd.Timestamp)):
-                return obj.isoformat()
-            if isinstance(obj, dict):
-                return {make_serializable(k): make_serializable(v) for k, v in obj.items()}
-            if isinstance(obj, list):
-                return [make_serializable(i) for i in obj]
-            if isinstance(obj, (np.ndarray, np.generic)): # Handle numpy types
-                return obj.tolist()
-            # Add other type conversions if necessary
-            return obj
-
-        # Apply serialization to ensure all parts of the response are JSON-friendly
-        serialized_result = {
-            "response": make_serializable(result["response"]),
-            "retrieved_docs": make_serializable(result["retrieved_docs"]),
-            "pattern_analysis": make_serializable(result["pattern_analysis"])
-        }
-        
-        logger.info(f"Successfully processed query. Sending response.")
+        # Use the global make_serializable utility
+        serialized_result = make_serializable(result)
         return JSONResponse(content=serialized_result)
     except Exception as e:
         logger.error(f"Error processing query via API: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while processing your query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
 
-@app.get("/health", summary="Health Check", description="Returns the status of the API and RAG system.")
-async def health_check():
-    status = "ok"
-    rag_status = "initialized"
+@app.post("/document_details", response_model=DocumentDetailsResponse)
+async def get_document_details_endpoint(request: DocumentDetailsRequest):
+    """
+    New endpoint to fetch details for specific documents by their IDs.
+    The IDs are expected to be the indices from the original metadata list.
+    """
     if rag_system_instance is None:
-        status = "error"
-        rag_status = "not_initialized_or_failed"
-    elif rag_system_instance.llm is None or rag_system_instance.embedding_model is None:
-        status = "degraded"
-        rag_status = "models_not_loaded"
-    elif rag_system_instance.index is None or rag_system_instance.index.ntotal == 0 :
-        status = "degraded"
-        rag_status = "index_not_loaded_or_empty"
+        logger.error("API call to /document_details failed: RAG system not available.")
+        raise HTTPException(status_code=503, detail="RAG system unavailable.")
+    
+    logger.info(f"Received request for document details. IDs: {request.doc_ids}")
+    try:
+        documents = rag_system_instance.get_documents_by_ids(request.doc_ids)
+        # Use the global make_serializable utility
+        serialized_documents = make_serializable(documents)
+        return DocumentDetailsResponse(documents=serialized_documents)
+    except Exception as e:
+        logger.error(f"Error fetching document details via API: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error fetching document details: {str(e)}")
 
+@app.get("/health", summary="Health Check")
+async def health_check():
+    status, rag_status = "ok", "initialized"
+    if rag_system_instance is None: status, rag_status = "error", "not_initialized_or_failed"
+    elif rag_system_instance.llm is None or rag_system_instance.embedding_model is None: status, rag_status = "degraded", "models_not_loaded"
+    elif rag_system_instance.index is None or rag_system_instance.index.ntotal == 0: status, rag_status = "degraded", "index_not_loaded_or_empty"
+    return {"api_status": status, "rag_system_status": rag_status, "timestamp": datetime.datetime.utcnow().isoformat()}
 
-    return {
-        "api_status": status,
-        "rag_system_status": rag_status,
-        "timestamp": datetime.datetime.utcnow().isoformat()
-    }
-
-# --- Main execution block to run the FastAPI server ---
 if __name__ == "__main__":
     logger.info("Starting FastAPI server using Uvicorn...")
-    # host="0.0.0.0" makes the server accessible from other devices on the network.
-    # port=8000 is a common port for development.
-    # reload=True is useful for development as it automatically restarts the server on code changes.
-    # However, for production, you'd typically use a process manager like Gunicorn.
+    # Ensure your script is named 'Project.py' or adjust "Project:app" accordingly.
+    # If your file is main.py, use "main:app".
+    # For the provided code, if saved as e.g., `main_api.py`, use `uvicorn.run("main_api:app", ...)`
     uvicorn.run("Project:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
-    # Note: If your file is named something else, e.g. `app.py`, use "app:app".
-    # The "main_api:app" string means "in the file main_api.py, find the FastAPI instance named app".
+

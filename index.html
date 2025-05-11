@@ -51,11 +51,6 @@
             <textarea id="queryInput" rows="3" class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., How to fix login issue?"></textarea>
         </div>
 
-        <div class="mb-6">
-            <label for="kInput" class="block text-sm font-medium text-gray-700 mb-1">Number of documents to retrieve (k):</label>
-            <input type="number" id="kInput" value="3" min="1" class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-        </div>
-
         <button id="submitQuery" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-150 ease-in-out">
             Search
         </button>
@@ -71,125 +66,143 @@
 
             <div id="retrievedDocs" class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">Retrieved Documents:</h3>
-                </div>
-
-            <div id="patternAnalysis" class="p-4 bg-gray-50 border border-gray-200 rounded-md">
-                <h3 class="text-lg font-semibold text-gray-700 mb-2">Pattern Analysis:</h3>
-                <pre class="text-sm text-gray-600 whitespace-pre-wrap">...</pre>
             </div>
         </div>
-         <div id="errorArea" class="mt-4 p-4 bg-red-100 border border-red-300 text-red-700 rounded-md" style="display: none;">
-            </div>
+
+        <div id="errorArea" class="mt-4 p-4 bg-red-100 border border-red-300 text-red-700 rounded-md" style="display: none;">
+        </div>
     </div>
 
     <script>
         // Get DOM elements
         const queryInput = document.getElementById('queryInput');
-        const kInput = document.getElementById('kInput');
         const submitButton = document.getElementById('submitQuery');
         const resultsArea = document.getElementById('resultsArea');
         const responseDiv = document.getElementById('response').querySelector('p');
-        const retrievedDocsDiv = document.getElementById('retrievedDocs');
-        const patternAnalysisPre = document.getElementById('patternAnalysis').querySelector('pre');
         const loader = document.getElementById('loader');
         const errorArea = document.getElementById('errorArea');
+        const retrievedDocsDiv = document.getElementById('retrievedDocs');
 
-        // API endpoint URL (ensure this matches your FastAPI backend URL)
-        const apiUrl = 'https://avivaaipoc.onrender.com/query'; // Use the correct endpoint for POST
+        // Add exceptional area
+        let exceptionalDiv = document.createElement('div');
+        exceptionalDiv.id = 'exceptionalArea';
+        exceptionalDiv.className = 'mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md';
+        resultsArea.insertBefore(exceptionalDiv, retrievedDocsDiv);
+
+        // Add "Show More Info" button
+        const moreInfoBtn = document.createElement('button');
+        moreInfoBtn.id = 'moreInfoBtn';
+        moreInfoBtn.textContent = 'Show More Info';
+        moreInfoBtn.className = 'w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-150 ease-in-out mb-4';
+        resultsArea.appendChild(moreInfoBtn);
+        moreInfoBtn.style.display = 'none';
+
+        // API endpoint URL
+        const apiUrl = 'http://localhost:8000/query';
+
+        // Store retrieved documents data
+        let currentRetrievedDocs = [];
 
         // Event listener for the submit button
         submitButton.addEventListener('click', async () => {
             const query = queryInput.value.trim();
-            const k = parseInt(kInput.value, 10);
-
             if (!query) {
                 displayError("Please enter a query.");
                 return;
             }
-            if (isNaN(k) || k < 1) {
-                displayError("Please enter a valid number for 'k'.");
-                return;
-            }
-
-            // Clear previous results and show loader
             responseDiv.textContent = '...';
-            retrievedDocsDiv.innerHTML = '<h3 class="text-lg font-semibold text-gray-700 mb-2">Retrieved Documents:</h3>'; // Keep title
-            patternAnalysisPre.textContent = '...';
-            resultsArea.style.display = 'none'; // Hide results area while loading
-            errorArea.style.display = 'none'; // Hide error area
-            loader.style.display = 'block'; // Show loader
+            exceptionalDiv.innerHTML = '';
+            retrievedDocsDiv.style.display = 'none';
+            resultsArea.style.display = 'none';
+            errorArea.style.display = 'none';
+            loader.style.display = 'block';
+            moreInfoBtn.style.display = 'none';
 
             try {
-                // Make the API call
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ query: query, k: k }),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query }),
                 });
-
-                loader.style.display = 'none'; // Hide loader
-                resultsArea.style.display = 'block'; // Show results area
-
+                loader.style.display = 'none';
+                resultsArea.style.display = 'block';
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ detail: "Unknown error occurred. Status: " + response.status }));
                     throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
                 }
-
                 const data = await response.json();
-
-                // Display the results
-                responseDiv.textContent = data.response || "No response generated.";
-
-                // Display retrieved documents
-                if (data.retrieved_docs && data.retrieved_docs.length > 0) {
-                    data.retrieved_docs.forEach(doc => {
-                        const docCard = document.createElement('div');
-                        docCard.className = 'result-card mb-4 p-4 border border-gray-200 rounded-md bg-gray-50 shadow';
-                        
-                        let contentHTML = `<h4 class="font-semibold text-md text-gray-800 mb-2">Document (Similarity: ${doc.similarity.toFixed(4)})</h4>`;
-                        for (const [key, value] of Object.entries(doc.content)) {
-                            if (key !== 'combined_text') { // Exclude combined_text
-                                contentHTML += `<p class="text-sm text-gray-600"><strong>${formatKey(key)}:</strong> ${formatValue(value)}</p>`;
-                            }
-                        }
-                        docCard.innerHTML = contentHTML;
-                        retrievedDocsDiv.appendChild(docCard);
-                    });
+                responseDiv.innerHTML = beautifyResponse(data.response);
+                
+                // Store retrieved docs for later use
+                currentRetrievedDocs = data.retrieved_docs || [];
+                
+                // Show the "Show More Info" button only if we have documents
+                moreInfoBtn.style.display = currentRetrievedDocs.length > 0 ? 'block' : 'none';
+                
+                // Exceptional insights
+                if (data.exceptional) {
+                    exceptionalDiv.innerHTML = renderExceptional(data.exceptional);
                 } else {
-                    retrievedDocsDiv.innerHTML += '<p class="text-gray-600">No documents retrieved.</p>';
+                    exceptionalDiv.innerHTML = '';
                 }
-
-                // Display pattern analysis
-                patternAnalysisPre.textContent = JSON.stringify(data.pattern_analysis, null, 2);
-
             } catch (error) {
-                loader.style.display = 'none'; // Hide loader in case of error
-                resultsArea.style.display = 'block'; // Still show results area to display error message or previous state
                 console.error('Error fetching data:', error);
                 displayError(`Failed to fetch data: ${error.message}`);
             }
         });
 
-        // Helper function to format keys (e.g., "root_cause" -> "Root Cause")
+        // Event listener for "Show More Info" button
+        moreInfoBtn.addEventListener('click', () => {
+            retrievedDocsDiv.style.display = 'block';
+            retrievedDocsDiv.innerHTML = '<h3 class="text-lg font-semibold text-gray-700 mb-2">Retrieved Documents:</h3>';
+            
+            if (currentRetrievedDocs.length > 0) {
+                // Hide the "Show More Info" button since we're showing the documents
+                moreInfoBtn.style.display = 'none';
+                
+                currentRetrievedDocs.forEach((doc, idx) => {
+                    const docCard = document.createElement('div');
+                    docCard.className = 'result-card mb-4 p-4 border border-gray-200 rounded-md bg-gray-50 shadow';
+                    let contentHTML = `<h4 class="font-semibold text-md text-gray-800 mb-2">Document #${idx + 1} (ID: ${doc.id})</h4>`;
+                    
+                    if (doc.content) {
+                        for (const [key, value] of Object.entries(doc.content)) {
+                            contentHTML += `<p class="text-sm text-gray-600"><strong>${formatKey(key)}:</strong> ${formatValue(value)}</p>`;
+                        }
+                    }
+                    
+                    if (doc.similarity !== undefined) {
+                        contentHTML += `<p class="text-sm text-gray-600 mt-2"><strong>Relevance Score:</strong> ${(doc.similarity * 100).toFixed(2)}%</p>`;
+                    }
+                    
+                    docCard.innerHTML = contentHTML;
+                    retrievedDocsDiv.appendChild(docCard);
+                });
+            } else {
+                retrievedDocsDiv.innerHTML += '<p class="text-gray-600">No documents found.</p>';
+            }
+        });
+
+        // Helper functions for formatting
         function formatKey(key) {
-            return key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+            return key.split('_')
+                     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                     .join(' ');
         }
 
-        // Helper function to format values (e.g., handle dates or long text)
         function formatValue(value) {
-            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
-                try {
-                    return new Date(value).toLocaleDateString();
-                } catch (e) {
-                    return value; // Return original if parsing fails
-                }
-            }
-            return value;
+            if (value === null || value === undefined) return '';
+            if (typeof value === 'string') return value;
+            if (typeof value === 'number') return value.toString();
+            if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+            if (value instanceof Date) return value.toLocaleDateString();
+            return JSON.stringify(value);
         }
-        
-        // Helper function to display errors
+
+        function beautifyResponse(text) {
+            return text.split('\n').filter(p => p.trim()).map(p => `<p class="mb-3">${p}</p>`).join('');
+        }
+
         function displayError(message) {
             errorArea.textContent = message;
             errorArea.style.display = 'block';
